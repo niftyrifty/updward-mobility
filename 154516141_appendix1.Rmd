@@ -1,0 +1,135 @@
+---
+title: "15456141_appendix1"
+author: "Rifayat Uddin"
+date: "1/25/2019"
+output: pdf_document
+---
+
+For this paper's data analysis, I chose to use the Agresti-Coull confidence intervals for all the 40 commuting zone given in the sample. This is shown in Part 1. Part 2 shows the calculations for the upward mobinility proportions for the regions. Part 2 also has the necessary calculations and comparisons to see if they're the same. 
+
+```{r}
+
+data = read.csv("http://dept.stat.lsa.umich.edu/~bbh/s485/data/mobility1.csv")
+```
+
+
+Part 1
+
+Agresti-Coull Confidence interval 
+In this part, we're finding the confidence intervals for all the 40 commuting zones that we're going to be looking at. 
+
+```{r}
+interval = function(n, p_hat, k) {
+  x = p_hat*n
+  x_tilda = x + k^2/2 
+  n_tilda = n + k^2
+
+  p_tilda = x_tilda/n_tilda
+  q_tilda = 1 - p_tilda
+  
+  p_tilda = x_tilda/n_tilda
+  vec = c(p_tilda-k*sqrt(p_tilda*q_tilda)*n_tilda^(-0.5),
+  p_tilda+k*sqrt(p_tilda*q_tilda)*n_tilda^(-0.5))
+  return(vec)
+}
+
+confidence_interval = matrix(nrow=40, ncol=2)
+for (i in 1:40) {
+  if (interval(data[i,6], data[i,7], 1.96)[1] < 0) {
+    confidence_interval[i,1] = 0 } 
+  else {
+    confidence_interval[i,1] = signif(interval(data[i,6], data[i,7], 1.96)[1], digits=3) 
+  }
+  confidence_interval[i,2] = signif(interval(data[i,6], data[i,7], 1.96)[2], digits=3)
+}
+
+
+confidence_interval = as.data.frame(confidence_interval) # Change names of conf_int 
+colnames(confidence_interval)[2] = "Lower_Bound"
+colnames(confidence_interval)[1] = "Upper_Bound" 
+
+confidence_interval
+
+data = append(data, confidence_interval) 
+data = as.data.frame(data)
+
+library(ggplot2)
+west_plot = ggplot(data[data[,3] == 'west',], aes(x = zone, y = p.upmover)) + geom_point(size=4) + ggtitle("Confidence Interval of Upward Mobility in the West") + geom_errorbar(aes(ymax = Upper_Bound, ymin = Lower_Bound)) + scale_x_discrete(name="Zone") + scale_y_continuous(name="Upward Mobility")
+
+south_plot = ggplot(data[data[,3] == 'south',], aes(x = zone, y = p.upmover)) + geom_point(size=4) + ggtitle("Confidence Interval of Upward Mobility in the South") + geom_errorbar(aes(ymax = Upper_Bound, ymin = Lower_Bound))  + 
+  scale_x_discrete(name="Zone") + scale_y_continuous(name="Upward Mobility") 
+
+midwest_plot = ggplot(data[data[,3] == 'midwest',], aes(x = zone, y = p.upmover)) + geom_point(size=4) + ggtitle("Confidence Interval of Upward Mobility in the Midwest") + geom_errorbar(aes(ymax = Upper_Bound, ymin = Lower_Bound)) +  scale_x_discrete(name="Zone") + scale_y_continuous(name="Upward Mobility") 
+
+northeast_plot = ggplot(data[data[,3] == 'northeast',], aes(x = zone, y = p.upmover)) + ggtitle("Confidence Interval of Upward Mobility in the Northeast") + geom_point(size=4) + geom_errorbar(aes(ymax = Upper_Bound, ymin = Lower_Bound)) + scale_x_discrete(name="Zone") + scale_y_continuous(name="Upward Mobility")
+
+west_plot
+south_plot
+midwest_plot
+northeast_plot
+
+
+```
+
+Part 2)
+
+Part b)
+```{r}
+
+
+
+
+#Likelihood Testing Work:
+
+
+
+
+west = data[data$region=="west",]
+west
+
+midwest = data[data$region=="midwest",]
+midwest
+
+northeast = data[data$region=="northeast",]
+northeast
+
+south = data[data$region=="south",]
+south
+
+
+
+boxplot(midwest$p.upmover, west$p.upmover, south$p.upmover, northeast$p.upmover, names=c("Midwest","West","South", "Northeast"))
+
+title("Upward Mobility Probability")
+
+
+
+# vector for regions
+vector_regions_n = c(sum(west$n.lowstart),
+        sum(midwest$n.lowstart),
+        sum(northeast$n.lowstart),
+        sum(south$n.lowstart))
+vector_regions_n
+
+
+# A Vector for the Regions Proportions 
+
+proportions_region = c(sum(west$n.lowstart * west$p.upmover)/sum(west$n.lowstart),sum(midwest$n.lowstart * midwest$p.upmover)/sum(midwest$n.lowstart), sum(northeast$n.lowstart * northeast$p.upmover)/sum(northeast$n.lowstart), sum(south$n.lowstart * south$p.upmover)/sum(south$n.lowstart))
+
+proportions_region
+
+# Likelihood function
+likelihood_func = function(p) {
+  value = sum (dbinom(vector_regions_n*proportions_region, size=vector_regions_n, prob=p, log=T)) 
+  return(value)
+}
+
+# Likelihood test
+2*(likelihood_func(proportions_region) - likelihood_func( sum(vector_regions_n*proportions_region)/sum(vector_regions_n)))
+
+
+# p-value to compare 
+pchisq(2*(likelihood_func(proportions_region) - likelihood_func( sum(vector_regions_n*proportions_region)/sum(vector_regions_n))), 3, lower=F)
+
+
+```
